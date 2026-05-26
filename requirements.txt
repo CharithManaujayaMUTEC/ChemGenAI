@@ -1,0 +1,12 @@
+torch
+numpy
+pandas
+matplotlib
+scikit-learn
+transformers
+datasets
+fastapi
+uvicorn
+mlflow
+pyyaml
+tqdm
