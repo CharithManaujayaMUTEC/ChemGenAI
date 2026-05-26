@@ -1,5 +1,5 @@
 from datasets import load_dataset
-from preprocess import SmilesTokenizer, SmilesDataset
+from src.data.preprocess import SmilesTokenizer, SmilesDataset
 
 from torch.utils.data import DataLoader
 
