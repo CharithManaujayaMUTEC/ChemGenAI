@@ -18,3 +18,9 @@ def health():
     return {
         "status": "healthy"
     }
+
+@app.post("/generate")
+def generate(request: GenerateRequest):
+    return {
+        "generated_smiles": "CCO"
+    }
