@@ -10,3 +10,5 @@ uvicorn
 mlflow
 pyyaml
 tqdm
+fastapi
+uvicorn
