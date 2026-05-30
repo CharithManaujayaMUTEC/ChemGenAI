@@ -3,5 +3,4 @@ __pycache__/
 .env
 mlruns/
 data/raw/
-models/
 .ipynb_checkpoints/
