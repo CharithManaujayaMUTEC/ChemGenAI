@@ -1,4 +1,5 @@
 import os
+import json
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -33,6 +34,13 @@ print(f"Loaded {len(smiles_list)} molecules")
 tokenizer = SmilesTokenizer()
 
 tokenizer.build_vocab(smiles_list)
+
+os.makedirs("models", exist_ok=True)
+
+with open("models/vocab.json", "w") as f:
+    json.dump(tokenizer.vocab, f)
+
+print("Tokenizer saved")
 
 print(f"Vocabulary Size: {len(tokenizer.vocab)}")
 
