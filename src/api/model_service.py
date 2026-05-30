@@ -1,4 +1,5 @@
 import torch
+import json
 
 from src.models.lstm_vae import LSTMVAE
 from src.data.load_data import load_zinc_subset
@@ -10,12 +11,17 @@ device = torch.device(
 
 print("Loading tokenizer...")
 
-smiles_list = load_zinc_subset(5000)
-
 tokenizer = SmilesTokenizer()
-tokenizer.build_vocab(smiles_list)
 
-max_len = max(len(s) for s in smiles_list) + 2
+with open("models/vocab.json", "r") as f:
+    tokenizer.vocab = json.load(f)
+
+tokenizer.char_to_idx = tokenizer.vocab
+tokenizer.idx_to_char = {
+    int(v): k for k, v in tokenizer.vocab.items()
+}
+
+max_len = 120
 
 print("Loading model...")
 
