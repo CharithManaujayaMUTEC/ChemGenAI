@@ -1,9 +1,16 @@
 from fastapi import FastAPI
+from pydantic import BaseModel
+
+from src.api.model_service import generate_smiles
 
 app = FastAPI(
     title="ChemGenAI API",
     version="1.0.0"
 )
+
+
+class GenerateRequest(BaseModel):
+    prompt: str
 
 
 @app.get("/")
@@ -19,8 +26,13 @@ def health():
         "status": "healthy"
     }
 
+
 @app.post("/generate")
 def generate(request: GenerateRequest):
+
+    smiles = generate_smiles()
+
     return {
-        "generated_smiles": "CCO"
+        "prompt": request.prompt,
+        "generated_smiles": smiles
     }
