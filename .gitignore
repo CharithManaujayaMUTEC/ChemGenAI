@@ -4,3 +4,4 @@ __pycache__/
 mlruns/
 data/raw/
 .ipynb_checkpoints/
+mlflow.db
