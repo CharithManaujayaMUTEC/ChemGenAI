@@ -70,11 +70,56 @@ def generate_smiles():
 
     with torch.no_grad():
 
-        # Random latent vector
-        z = torch.randn(1, 128).to(device)
+        # Sample latent vector
+        z = torch.randn(1, model.latent_dim).to(device)
 
-        # NOTE:
-        # This is currently a placeholder generation.
-        # We will improve this later.
+        # Initialize decoder hidden state
+        hidden = torch.tanh(
+            model.fc_latent_to_hidden(z)
+        ).unsqueeze(0)
 
-        return "CCO"
+        cell = torch.zeros_like(hidden)
+
+        start_token = tokenizer.char_to_idx["<start>"]
+
+        current_token = torch.tensor(
+            [[start_token]],
+            device=device
+        )
+
+        generated_tokens = []
+
+        for _ in range(max_len):
+
+            embedded = model.embedding(current_token)
+
+            output, (hidden, cell) = model.decoder_lstm(
+                embedded,
+                (hidden, cell)
+            )
+
+            logits = model.output_fc(output)
+
+            next_token = torch.argmax(
+                logits,
+                dim=-1
+            )
+
+            token_id = next_token.item()
+
+            if token_id == tokenizer.char_to_idx["<end>"]:
+                break
+
+            generated_tokens.append(token_id)
+
+            current_token = next_token
+
+        smiles = tokenizer.decode(generated_tokens)
+
+        return smiles
+
+if __name__ == "__main__":
+
+    for i in range(10):
+
+        print(generate_smiles())
