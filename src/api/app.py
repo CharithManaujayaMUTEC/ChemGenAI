@@ -8,6 +8,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
+print("ChemGenAI FastAPI started")
 
 class GenerateRequest(BaseModel):
     prompt: str
@@ -36,3 +37,7 @@ def generate(request: GenerateRequest):
         "prompt": request.prompt,
         "generated_smiles": smiles
     }
+
+@app.get("/ping")
+def ping():
+    return {"message": "pong"}
