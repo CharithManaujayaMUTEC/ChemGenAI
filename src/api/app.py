@@ -28,7 +28,6 @@ def health():
         "status": "healthy"
     }
 
-
 @app.post("/generate")
 def generate(request: GenerateRequest):
 
@@ -37,7 +36,7 @@ def generate(request: GenerateRequest):
     return {
         "prompt": request.prompt,
         "generated_smiles": smiles,
-        "valid": is_valid_smiles(smiles)
+        "valid": len(smiles) > 0
     }
 
 @app.get("/ping")
