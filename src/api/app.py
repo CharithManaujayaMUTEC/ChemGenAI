@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from src.evaluation.metrics import is_valid_smiles
 from src.api.model_service import generate_smiles
 
 app = FastAPI(
@@ -35,7 +36,8 @@ def generate(request: GenerateRequest):
 
     return {
         "prompt": request.prompt,
-        "generated_smiles": smiles
+        "generated_smiles": smiles,
+        "valid": is_valid_smiles(smiles)
     }
 
 @app.get("/ping")
