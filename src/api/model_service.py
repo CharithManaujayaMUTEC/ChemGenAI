@@ -100,9 +100,16 @@ def generate_smiles():
 
             logits = model.output_fc(output)
 
-            next_token = torch.argmax(
-                logits,
+            temperature = 0.8
+
+            probs = torch.softmax(
+                logits.squeeze(1) / temperature,
                 dim=-1
+            )
+
+            next_token = torch.multinomial(
+                probs,
+                num_samples=1
             )
 
             token_id = next_token.item()
