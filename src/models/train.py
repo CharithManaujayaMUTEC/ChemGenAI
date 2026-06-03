@@ -4,8 +4,10 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-# import mlflow
-# import mlflow.pytorch
+import mlflow
+import mlflow.pytorch
+
+mlflow.set_tracking_uri("file:./mlruns")
 
 from src.data.load_data import load_zinc_subset
 from src.data.preprocess import (
@@ -81,7 +83,6 @@ device = torch.device(
 
 print(f"Using device: {device}")
 
-
 # =========================
 # TRAINING CONFIG
 # =========================
@@ -155,7 +156,10 @@ os.makedirs("models", exist_ok=True)
 # START MLFLOW
 # =========================
 
-# mlflow.start_run()
+if mlflow.active_run():
+    mlflow.end_run()
+
+mlflow.start_run()
 
 print("MLflow run started")
 
@@ -164,12 +168,15 @@ print("MLflow run started")
 # LOG HYPERPARAMETERS
 # =========================
 
-# mlflow.log_param("embedding_dim", embedding_dim)
-# mlflow.log_param("hidden_dim", hidden_dim)
-# mlflow.log_param("latent_dim", latent_dim)
-# mlflow.log_param("learning_rate", learning_rate)
-# mlflow.log_param("batch_size", batch_size)
-# mlflow.log_param("epochs", epochs)
+mlflow.log_param("embedding_dim", embedding_dim)
+mlflow.log_param("hidden_dim", hidden_dim)
+mlflow.log_param("latent_dim", latent_dim)
+mlflow.log_param("learning_rate", learning_rate)
+mlflow.log_param("batch_size", batch_size)
+mlflow.log_param("epochs", epochs)
+mlflow.log_param("dataset_size", len(smiles_list))
+mlflow.log_param("max_len", max_len)
+mlflow.log_param("vocab_size", len(tokenizer.vocab))
 
 
 # =========================
@@ -217,11 +224,11 @@ for epoch in range(epochs):
         f"Epoch {epoch + 1}/{epochs} | Loss: {avg_loss:.4f}"
     )
 
-    # mlflow.log_metric(
-    #     "loss",
-    #     avg_loss,
-    #     step=epoch
-    # )
+    mlflow.log_metric(
+        "loss",
+        avg_loss,
+        step=epoch
+    )
 
 
 # =========================
@@ -240,10 +247,10 @@ print("Model saved locally")
 # LOG MODEL TO MLFLOW
 # =========================
 
-# mlflow.pytorch.log_model(
-#     model,
-#     "lstm_vae_model"
-# )
+mlflow.pytorch.log_model(
+    model,
+    "lstm_vae_model"
+)
 
 print("Model logged to MLflow")
 
@@ -252,6 +259,6 @@ print("Model logged to MLflow")
 # END MLFLOW
 # =========================
 
-# mlflow.end_run()
+mlflow.end_run()
 
 print("MLflow run completed")
