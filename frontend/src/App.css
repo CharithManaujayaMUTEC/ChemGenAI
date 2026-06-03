@@ -12,10 +12,6 @@
 body {
   background: #030912;
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
 }
 
 /* ── Root card ── */
