@@ -70,10 +70,8 @@ def generate_smiles():
 
     with torch.no_grad():
 
-        # Sample latent vector
         z = torch.randn(1, model.latent_dim).to(device)
 
-        # Initialize decoder hidden state
         hidden = torch.tanh(
             model.fc_latent_to_hidden(z)
         ).unsqueeze(0)
@@ -89,7 +87,9 @@ def generate_smiles():
 
         generated_tokens = []
 
-        for _ in range(max_len):
+        print("Start token:", start_token)
+
+        for step in range(max_len):
 
             embedded = model.embedding(current_token)
 
@@ -107,7 +107,10 @@ def generate_smiles():
 
             token_id = next_token.item()
 
+            print(f"Step {step}: {token_id}")
+
             if token_id == tokenizer.char_to_idx["<end>"]:
+                print("Predicted END token")
                 break
 
             generated_tokens.append(token_id)
@@ -120,6 +123,11 @@ def generate_smiles():
 
 if __name__ == "__main__":
 
-    for i in range(10):
+    print("START TEST")
 
-        print(generate_smiles())
+    molecule = generate_smiles()
+
+    print("Generated molecule:")
+    print(repr(molecule))
+
+    print("END TEST")
