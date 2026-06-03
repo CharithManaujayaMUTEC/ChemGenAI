@@ -12,3 +12,4 @@ pyyaml
 tqdm
 fastapi
 uvicorn
+rdkit
