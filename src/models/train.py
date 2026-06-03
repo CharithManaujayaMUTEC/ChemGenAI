@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-import mlflow
-import mlflow.pytorch
+# import mlflow
+# import mlflow.pytorch
 
 from src.data.load_data import load_zinc_subset
 from src.data.preprocess import (
@@ -22,7 +22,7 @@ from src.models.lstm_vae import LSTMVAE
 
 print("Loading dataset...")
 
-smiles_list = load_zinc_subset(5000)
+smiles_list = load_zinc_subset(20000)
 
 print(f"Loaded {len(smiles_list)} molecules")
 
@@ -86,7 +86,7 @@ print(f"Using device: {device}")
 # TRAINING CONFIG
 # =========================
 
-epochs = 5
+epochs = 15
 embedding_dim = 128
 hidden_dim = 256
 latent_dim = 128
@@ -127,12 +127,18 @@ criterion = nn.CrossEntropyLoss(
 def vae_loss(logits, targets, mu, logvar):
 
     reconstruction_loss = criterion(
-        logits.view(-1, logits.size(-1)),
-        targets.view(-1)
+        logits.reshape(
+            -1,
+            logits.size(-1)
+        ),
+        targets.reshape(-1)
     )
 
     kl_loss = -0.5 * torch.mean(
-        1 + logvar - mu.pow(2) - logvar.exp()
+        1 +
+        logvar -
+        mu.pow(2) -
+        logvar.exp()
     )
 
     return reconstruction_loss + kl_loss
@@ -149,7 +155,7 @@ os.makedirs("models", exist_ok=True)
 # START MLFLOW
 # =========================
 
-mlflow.start_run()
+# mlflow.start_run()
 
 print("MLflow run started")
 
@@ -158,12 +164,12 @@ print("MLflow run started")
 # LOG HYPERPARAMETERS
 # =========================
 
-mlflow.log_param("embedding_dim", embedding_dim)
-mlflow.log_param("hidden_dim", hidden_dim)
-mlflow.log_param("latent_dim", latent_dim)
-mlflow.log_param("learning_rate", learning_rate)
-mlflow.log_param("batch_size", batch_size)
-mlflow.log_param("epochs", epochs)
+# mlflow.log_param("embedding_dim", embedding_dim)
+# mlflow.log_param("hidden_dim", hidden_dim)
+# mlflow.log_param("latent_dim", latent_dim)
+# mlflow.log_param("learning_rate", learning_rate)
+# mlflow.log_param("batch_size", batch_size)
+# mlflow.log_param("epochs", epochs)
 
 
 # =========================
@@ -182,13 +188,19 @@ for epoch in range(epochs):
 
         batch = batch.to(device)
 
+        # Teacher forcing inputs
+        inputs = batch[:, :-1]
+
+        # Next-token prediction targets
+        targets = batch[:, 1:]
+
         optimizer.zero_grad()
 
-        logits, mu, logvar = model(batch)
+        logits, mu, logvar = model(inputs)
 
         loss = vae_loss(
             logits,
-            batch,
+            targets,
             mu,
             logvar
         )
@@ -201,14 +213,15 @@ for epoch in range(epochs):
 
     avg_loss = total_loss / len(dataloader)
 
-    print(f"Epoch {epoch+1}/{epochs} | Loss: {avg_loss:.4f}")
-
-    # Log metrics
-    mlflow.log_metric(
-        "loss",
-        avg_loss,
-        step=epoch
+    print(
+        f"Epoch {epoch + 1}/{epochs} | Loss: {avg_loss:.4f}"
     )
+
+    # mlflow.log_metric(
+    #     "loss",
+    #     avg_loss,
+    #     step=epoch
+    # )
 
 
 # =========================
@@ -227,10 +240,10 @@ print("Model saved locally")
 # LOG MODEL TO MLFLOW
 # =========================
 
-mlflow.pytorch.log_model(
-    model,
-    "lstm_vae_model"
-)
+# mlflow.pytorch.log_model(
+#     model,
+#     "lstm_vae_model"
+# )
 
 print("Model logged to MLflow")
 
@@ -239,6 +252,6 @@ print("Model logged to MLflow")
 # END MLFLOW
 # =========================
 
-mlflow.end_run()
+# mlflow.end_run()
 
 print("MLflow run completed")
