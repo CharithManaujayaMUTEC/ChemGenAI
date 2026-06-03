@@ -70,11 +70,21 @@ def generate_smiles():
 
     with torch.no_grad():
 
+        # Sample latent vector
         z = torch.randn(1, model.latent_dim).to(device)
 
+        print("z mean:", z.mean().item())
+        print("z std :", z.std().item())
+
+        # Initialize decoder hidden state
         hidden = torch.tanh(
             model.fc_latent_to_hidden(z)
-        ).unsqueeze(0)
+        )
+
+        print("Hidden sample:")
+        print(hidden[0, :10])
+
+        hidden = hidden.unsqueeze(0)
 
         cell = torch.zeros_like(hidden)
 
