@@ -70,21 +70,14 @@ def generate_smiles():
 
     with torch.no_grad():
 
-        # Sample latent vector
-        z = torch.randn(1, model.latent_dim).to(device)
+        z = torch.randn(
+            1,
+            model.latent_dim
+        ).to(device)
 
-        print("z mean:", z.mean().item())
-        print("z std :", z.std().item())
-
-        # Initialize decoder hidden state
         hidden = torch.tanh(
             model.fc_latent_to_hidden(z)
-        )
-
-        print("Hidden sample:")
-        print(hidden[0, :10])
-
-        hidden = hidden.unsqueeze(0)
+        ).unsqueeze(0)
 
         cell = torch.zeros_like(hidden)
 
@@ -97,9 +90,7 @@ def generate_smiles():
 
         generated_tokens = []
 
-        print("Start token:", start_token)
-
-        for step in range(max_len):
+        for _ in range(max_len):
 
             embedded = model.embedding(current_token)
 
@@ -124,17 +115,16 @@ def generate_smiles():
 
             token_id = next_token.item()
 
-            print(f"Step {step}: {token_id}")
-
             if token_id == tokenizer.char_to_idx["<end>"]:
-                print("Predicted END token")
                 break
 
             generated_tokens.append(token_id)
 
             current_token = next_token
 
-        smiles = tokenizer.decode(generated_tokens)
+        smiles = tokenizer.decode(
+            generated_tokens
+        )
 
         return smiles
 
