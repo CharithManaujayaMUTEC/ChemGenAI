@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import MoleculeViewer from "./components/MoleculeViewer";
 import "./App.css";
+import logo from "./assets/logo.png";
+
+<img src={logo} alt="ChemGenAI" className="cg-logo-img" />
 
 const API = "https://charithmanujaya1-chemgenai.hf.space";
 
@@ -145,13 +148,15 @@ export default function App() {
 
       {/* ── Sidebar ── */}
       <aside className={`cg-sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
-        <div className="cg-sidebar-logo">
-          <div className="cg-logo-mark"><span className="cg-hexagon" aria-hidden="true">⬡</span></div>
-          <div className="cg-logo-text">
-            <span className="cg-brand">Chem<em>Gen</em>AI</span>
-            <span className="cg-brand-sub">Molecular Platform</span>
-          </div>
+      <div className="cg-sidebar-logo">
+        <div className="cg-logo-mark">
+          <img src="/logo.png" alt="ChemGenAI logo" className="cg-logo-img" />
         </div>
+        <div className="cg-logo-text">
+          <span className="cg-brand">Chem<em>Gen</em>AI</span>
+          <span className="cg-brand-sub">Molecular Platform</span>
+        </div>
+      </div>
 
         <nav className="cg-nav">
           {tabs.map(t => (

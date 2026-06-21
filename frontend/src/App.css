@@ -1181,6 +1181,12 @@ body {
 }
 
 @media (max-width: 900px) {
+  .cg-logo-img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    border-radius: 6px;
+  }
   .cg-sidebar {
     position: fixed;
     left: 0;
