@@ -427,7 +427,7 @@ export default function App() {
         )}
 
         <footer className="cg-footer">
-          <span>ChemGenAI · University of Ruhuna · EC7203</span>
+          <span>ChemGenAI</span>
           <span className="footer-dot">·</span>
           <span>HuggingFace · Docker · MLflow · FastAPI</span>
         </footer>

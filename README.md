@@ -1,7 +1,6 @@
 # ⬡ ChemGenAI
 
-> **AI-Powered De Novo Molecular Generation Platform**  
-> EC7203 Advanced Artificial Intelligence · University of Ruhuna, Department of Computer Engineering
+> **AI-Powered De Novo Molecular Generation Platform**
 
 ---
 
@@ -288,11 +287,6 @@ ChemGenAI demonstrates how generative AI can be applied to computational chemist
 ---
 
 ## Authors
-
-Developed as part of the **EC7203 Advanced Artificial Intelligence** course project.
-
-**University of Ruhuna**  
-Department of Computer Engineering
 
 ---
 
