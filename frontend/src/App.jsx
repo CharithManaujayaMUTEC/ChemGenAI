@@ -149,13 +149,13 @@ export default function App() {
       {/* ── Sidebar ── */}
       <aside className={`cg-sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
       <div className="cg-sidebar-logo">
-        <div className="cg-logo-mark">
+        {/*<div className="cg-logo-mark">
           <img src="/logo.png" alt="ChemGenAI logo" className="cg-logo-img" />
-        </div>
-       {/* <div className="cg-logo-text">
+      </div>*/}
+       <div className="cg-logo-text">
           <span className="cg-brand">Chem<em>Gen</em>AI</span>
           <span className="cg-brand-sub">Molecular Platform</span>
-  </div>*/}
+      </div>
       </div>
 
         <nav className="cg-nav">
