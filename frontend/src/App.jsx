@@ -152,10 +152,10 @@ export default function App() {
         <div className="cg-logo-mark">
           <img src="/logo.png" alt="ChemGenAI logo" className="cg-logo-img" />
         </div>
-        <div className="cg-logo-text">
+       {/* <div className="cg-logo-text">
           <span className="cg-brand">Chem<em>Gen</em>AI</span>
           <span className="cg-brand-sub">Molecular Platform</span>
-        </div>
+  </div>*/}
       </div>
 
         <nav className="cg-nav">
