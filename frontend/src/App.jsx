@@ -26,7 +26,7 @@ const PIPELINE = [
 ];
 
 const ABOUT_CARDS = [
-  { icon: "◈", heading: "Problem",     color: "card-coral",  text: "Drug discovery takes 10+ years and billions in investment. The drug-like chemical space contains an estimated 10⁶⁰–10¹⁰⁰ molecules — impossible to explore manually." },
+  { icon: "◈", heading: "Problem",     color: "card-coral",  text: "Drug discovery takes 10+ years and billions in investment. The drug-like chemical space contains an estimated 10⁶⁰–10¹⁰⁰ molecules impossible to explore manually." },
   { icon: "⬡", heading: "Approach",    color: "card-teal",   text: "A Variational Autoencoder (VAE) with LSTM layers is trained on 20,000 SMILES from the ZINC database, learning a continuous latent representation of chemical space." },
   { icon: "→", heading: "Generation",  color: "card-blue",   text: "Novel molecules are created by sampling latent vectors and decoding them into SMILES strings. RDKit verifies chemical validity of each output." },
   { icon: "◆", heading: "Future Work", color: "card-purple", text: "Lipinski's Rule of Five filtering, binding affinity estimation, toxicity prediction, RL-based optimisation, and GNN/Transformer architectures." },
@@ -136,7 +136,7 @@ export default function App() {
     generate: { title: "De Novo Generation",      sub: "Sample novel molecules from learned latent chemical space" },
     pipeline: { title: "ML Pipeline",             sub: "End-to-end architecture from raw ZINC data to live API" },
     history:  { title: "Generation History",      sub: "Last 50 molecules generated via the FastAPI backend" },
-    about:    { title: "About the Platform",      sub: "Generative AI for early-stage drug discovery — EC7203" },
+    about:    { title: "About the Platform",      sub: "Generative AI for early-stage drug discovery EC7203" },
   };
 
   return (
@@ -411,7 +411,7 @@ export default function App() {
               </div>
               <div className="cg-academic-card">
                 <div className="academic-label">Academic Context</div>
-                <p className="academic-course">EC7203 — Advanced Artificial Intelligence</p>
+                <p className="academic-course">EC7203 Advanced Artificial Intelligence</p>
                 <p className="academic-dept">Department of Computer Engineering · University of Ruhuna</p>
                 <div className="academic-tags">
                   <span>Drug Discovery</span>
