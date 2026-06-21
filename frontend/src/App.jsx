@@ -3,83 +3,72 @@ import axios from "axios";
 import MoleculeViewer from "./components/MoleculeViewer";
 import "./App.css";
 
+const API = "https://charithmanujaya1-chemgenai.hf.space";
+
 const TECH_STACK = [
-  { label: "PyTorch", sub: "VAE Model", icon: "⬡" },
-  { label: "RDKit", sub: "Validation", icon: "◈" },
-  { label: "FastAPI", sub: "REST API", icon: "→" },
-  { label: "React", sub: "Dashboard", icon: "◆" },
-  { label: "Docker", sub: "MLOps", icon: "▣" },
-  { label: "MLflow", sub: "Tracking", icon: "⊛" },
+  { label: "PyTorch",  sub: "VAE Model",  icon: "⬡" },
+  { label: "RDKit",    sub: "Validation", icon: "◈" },
+  { label: "FastAPI",  sub: "REST API",   icon: "→" },
+  { label: "React",    sub: "Dashboard",  icon: "◆" },
+  { label: "Docker",   sub: "MLOps",      icon: "▣" },
+  { label: "MLflow",   sub: "Tracking",   icon: "⊛" },
 ];
 
 const PIPELINE = [
-  { step: "01", title: "ZINC Dataset", desc: "20,000 molecular structures in SMILES format", color: "step-blue" },
-  { step: "02", title: "VAE Training", desc: "LSTM-VAE learns latent chemical representations via PyTorch", color: "step-teal" },
-  { step: "03", title: "Latent Sampling", desc: "Novel points sampled from the learned latent space", color: "step-teal" },
-  { step: "04", title: "RDKit Validation", desc: "Generated SMILES verified for chemical validity", color: "step-blue" },
-  { step: "05", title: "React Dashboard", desc: "Real-time rendering and interactive visualisation", color: "step-blue" },
+  { step: "01", title: "ZINC Dataset",     desc: "20,000 molecular structures in SMILES format",                           color: "step-blue"  },
+  { step: "02", title: "VAE Training",     desc: "LSTM-VAE learns latent chemical representations via PyTorch",           color: "step-teal"  },
+  { step: "03", title: "Latent Sampling",  desc: "Novel points sampled from the learned latent space",                    color: "step-teal"  },
+  { step: "04", title: "RDKit Validation", desc: "Generated SMILES verified for chemical validity",                       color: "step-blue"  },
+  { step: "05", title: "React Dashboard",  desc: "Real-time rendering and interactive visualisation via FastAPI REST API", color: "step-blue"  },
 ];
 
 const ABOUT_CARDS = [
-  { icon: "◈", heading: "Problem", color: "card-coral", text: <>Drug discovery takes 10+ years and billions in investment. The drug-like chemical space contains an estimated 10<sup>60</sup>–10<sup>100</sup> molecules — impossible to explore manually.</> },
-  { icon: "⬡", heading: "Approach", color: "card-teal", text: "A Variational Autoencoder (VAE) with LSTM layers is trained on 20,000 SMILES from the ZINC database, learning a continuous latent representation of chemical space." },
-  { icon: "→", heading: "Generation", color: "card-blue", text: "Novel molecules are created by sampling latent vectors and decoding them into SMILES strings. RDKit verifies chemical validity of each output." },
+  { icon: "◈", heading: "Problem",     color: "card-coral",  text: "Drug discovery takes 10+ years and billions in investment. The drug-like chemical space contains an estimated 10⁶⁰–10¹⁰⁰ molecules — impossible to explore manually." },
+  { icon: "⬡", heading: "Approach",    color: "card-teal",   text: "A Variational Autoencoder (VAE) with LSTM layers is trained on 20,000 SMILES from the ZINC database, learning a continuous latent representation of chemical space." },
+  { icon: "→", heading: "Generation",  color: "card-blue",   text: "Novel molecules are created by sampling latent vectors and decoding them into SMILES strings. RDKit verifies chemical validity of each output." },
   { icon: "◆", heading: "Future Work", color: "card-purple", text: "Lipinski's Rule of Five filtering, binding affinity estimation, toxicity prediction, RL-based optimisation, and GNN/Transformer architectures." },
 ];
 
+/* ── Animated particle background ── */
 function ParticleCanvas() {
-  const canvasRef = useRef(null);
+  const ref = useRef(null);
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    let W = canvas.width = canvas.offsetWidth;
-    let H = canvas.height = canvas.offsetHeight;
-    const particles = Array.from({ length: 38 }, () => ({
+    const c = ref.current; if (!c) return;
+    const ctx = c.getContext("2d");
+    let W, H, raf;
+    const resize = () => { W = c.width = c.offsetWidth; H = c.height = c.offsetHeight; };
+    resize();
+    const pts = Array.from({ length: 40 }, () => ({
       x: Math.random() * W, y: Math.random() * H,
-      r: Math.random() * 1.4 + 0.4,
-      vx: (Math.random() - 0.5) * 0.18,
-      vy: (Math.random() - 0.5) * 0.18,
-      o: Math.random() * 0.5 + 0.15,
+      r: Math.random() * 1.3 + 0.4,
+      vx: (Math.random() - 0.5) * 0.2, vy: (Math.random() - 0.5) * 0.2,
+      o: Math.random() * 0.45 + 0.1,
     }));
-    let raf;
-    function draw() {
+    const draw = () => {
       ctx.clearRect(0, 0, W, H);
-      particles.forEach(p => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(0,220,150,${p.o})`;
-        ctx.fill();
+      pts.forEach(p => {
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0,220,150,${p.o})`; ctx.fill();
         p.x += p.vx; p.y += p.vy;
         if (p.x < 0 || p.x > W) p.vx *= -1;
         if (p.y < 0 || p.y > H) p.vy *= -1;
       });
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 90) {
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(0,220,150,${0.07 * (1 - dist / 90)})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
+      for (let i = 0; i < pts.length; i++)
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+          const d = Math.sqrt(dx*dx + dy*dy);
+          if (d < 100) {
+            ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y);
+            ctx.strokeStyle = `rgba(0,220,150,${0.07*(1-d/100)})`; ctx.lineWidth = 0.5; ctx.stroke();
           }
         }
-      }
       raf = requestAnimationFrame(draw);
-    }
+    };
     draw();
-    const ro = new ResizeObserver(() => {
-      W = canvas.width = canvas.offsetWidth;
-      H = canvas.height = canvas.offsetHeight;
-    });
-    ro.observe(canvas);
+    const ro = new ResizeObserver(resize); ro.observe(c);
     return () => { cancelAnimationFrame(raf); ro.disconnect(); };
   }, []);
-  return <canvas ref={canvasRef} className="cg-particles" aria-hidden="true" />;
+  return <canvas ref={ref} className="cg-particles" aria-hidden="true" />;
 }
 
 function StatusPill({ valid }) {
@@ -93,61 +82,83 @@ function StatusPill({ valid }) {
 }
 
 export default function App() {
-  const [smiles, setSmiles] = useState("");
-  const [valid, setValid] = useState(false);
+  const [smiles, setSmiles]   = useState("");
+  const [valid, setValid]     = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
+  const [error, setError]     = useState(false);
   const [activeTab, setActiveTab] = useState("generate");
-  const [genCount, setGenCount] = useState(0);
+  const [genCount, setGenCount]   = useState(0);
+  const [history, setHistory]     = useState([]);
+  const [histLoading, setHistLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const generateMolecule = async () => {
     try {
-      setLoading(true);
-      setError(false);
-      setSmiles("");
-      const response = await axios.post(
-        "https://charithmanujaya1-chemgenai.hf.space/generate",
-        { prompt: "Generate a molecule" }
-      );
-      setSmiles(response.data.generated_smiles);
-      setValid(response.data.valid);
+      setLoading(true); setError(false); setSmiles("");
+      const res = await axios.post(`${API}/generate`, { prompt: "Generate a molecule" });
+      setSmiles(res.data.generated_smiles);
+      setValid(res.data.valid);
       setGenCount(c => c + 1);
-    } catch (err) {
-      console.error(err);
-      setError(true);
+    } catch (e) {
+      console.error(e); setError(true);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchHistory = async () => {
+    setHistLoading(true);
+    try {
+      const res = await axios.get(`${API}/history`);
+      setHistory(res.data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setHistLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "history") fetchHistory();
+  }, [activeTab]);
+
   const tabs = [
     { id: "generate", label: "Generate", icon: "⬡" },
     { id: "pipeline", label: "Pipeline", icon: "→" },
-    { id: "about", label: "About", icon: "◈" },
+    { id: "history",  label: "History",  icon: "◉" },
+    { id: "about",    label: "About",    icon: "◈" },
   ];
+
+  const pageMeta = {
+    generate: { title: "De Novo Generation",      sub: "Sample novel molecules from learned latent chemical space" },
+    pipeline: { title: "ML Pipeline",             sub: "End-to-end architecture from raw ZINC data to live API" },
+    history:  { title: "Generation History",      sub: "Last 50 molecules generated via the FastAPI backend" },
+    about:    { title: "About the Platform",      sub: "Generative AI for early-stage drug discovery — EC7203" },
+  };
 
   return (
     <div className="cg-shell">
       <ParticleCanvas />
 
+      {/* ── Mobile overlay ── */}
+      {sidebarOpen && <div className="cg-sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+
       {/* ── Sidebar ── */}
-      <aside className="cg-sidebar">
+      <aside className={`cg-sidebar ${sidebarOpen ? "sidebar-open" : ""}`}>
         <div className="cg-sidebar-logo">
-          <div className="cg-logo-mark">
-            <div className="cg-hexagon" aria-hidden="true">⬡</div>
-          </div>
+          <div className="cg-logo-mark"><span className="cg-hexagon" aria-hidden="true">⬡</span></div>
           <div className="cg-logo-text">
             <span className="cg-brand">Chem<em>Gen</em>AI</span>
             <span className="cg-brand-sub">Molecular Platform</span>
           </div>
         </div>
 
-        <nav className="cg-nav" role="navigation" aria-label="Main navigation">
+        <nav className="cg-nav">
           {tabs.map(t => (
             <button
               key={t.id}
               className={`cg-nav-item ${activeTab === t.id ? "active" : ""}`}
-              onClick={() => setActiveTab(t.id)}
+              onClick={() => { setActiveTab(t.id); setSidebarOpen(false); }}
               aria-current={activeTab === t.id ? "page" : undefined}
             >
               <span className="nav-icon" aria-hidden="true">{t.icon}</span>
@@ -175,27 +186,19 @@ export default function App() {
       </aside>
 
       {/* ── Main ── */}
-      <main className="cg-main" role="main">
+      <main className="cg-main">
 
-        {/* ── Topbar ── */}
+        {/* Topbar */}
         <header className="cg-topbar">
+          <button className="cg-hamburger" onClick={() => setSidebarOpen(o => !o)} aria-label="Toggle menu">
+            <span /><span /><span />
+          </button>
           <div className="cg-topbar-left">
-            <h1 className="cg-page-title">
-              {activeTab === "generate" && "De Novo Generation"}
-              {activeTab === "pipeline" && "ML Pipeline"}
-              {activeTab === "about" && "About the Platform"}
-            </h1>
-            <p className="cg-page-sub">
-              {activeTab === "generate" && "Sample novel molecules from learned latent chemical space"}
-              {activeTab === "pipeline" && "End-to-end architecture from raw ZINC data to live API"}
-              {activeTab === "about" && "Generative AI for early-stage drug discovery"}
-            </p>
+            <h1 className="cg-page-title">{pageMeta[activeTab].title}</h1>
+            <p className="cg-page-sub">{pageMeta[activeTab].sub}</p>
           </div>
           <div className="cg-topbar-right">
-            <div className="cg-status-indicator">
-              <span className="cg-live-dot" />
-              <span>API live</span>
-            </div>
+            <div className="cg-live-badge"><span className="cg-live-dot" />API live</div>
             <div className="cg-dataset-badge">ZINC · 20K</div>
           </div>
         </header>
@@ -204,6 +207,7 @@ export default function App() {
         {activeTab === "generate" && (
           <div className="cg-content">
             <div className="cg-generate-layout">
+
               <div className="cg-generate-left">
                 <div className="cg-card cg-card-action">
                   <div className="cg-card-header">
@@ -213,37 +217,19 @@ export default function App() {
                       <p className="cg-card-desc">Each call samples a random point from the VAE's continuous latent representation and decodes it into a novel SMILES string.</p>
                     </div>
                   </div>
-
-                  <button
-                    className="cg-generate-btn"
-                    onClick={generateMolecule}
-                    disabled={loading}
-                    aria-busy={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <span className="btn-spinner" aria-hidden="true" />
-                        <span>Synthesising…</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="btn-icon" aria-hidden="true">⬡</span>
-                        <span>Generate Molecule</span>
-                      </>
-                    )}
+                  <button className="cg-generate-btn" onClick={generateMolecule} disabled={loading} aria-busy={loading}>
+                    {loading
+                      ? <><span className="btn-spinner" aria-hidden="true" /><span>Synthesising…</span></>
+                      : <><span className="btn-icon" aria-hidden="true">⬡</span><span>Generate Molecule</span></>}
                   </button>
-
                   {loading && (
-                    <div className="cg-loading-bar" role="status" aria-label="Generating molecule">
-                      <div className="cg-loading-track">
-                        <div className="cg-loading-fill" />
-                      </div>
+                    <div className="cg-loading-bar" role="status">
+                      <div className="cg-loading-track"><div className="cg-loading-fill" /></div>
                       <span className="cg-loading-label">Sampling from latent space</span>
                     </div>
                   )}
                 </div>
 
-                {/* SMILES result card */}
                 {smiles && !loading && (
                   <div className="cg-card cg-card-result" role="region" aria-label="Generated molecule result">
                     <div className="cg-smiles-header">
@@ -269,45 +255,33 @@ export default function App() {
                 )}
 
                 {!smiles && !loading && !error && (
-                  <div className="cg-empty-state" aria-label="No molecule generated yet">
+                  <div className="cg-empty-state">
                     <div className="empty-hex" aria-hidden="true">⬡</div>
                     <p>Hit <strong>Generate Molecule</strong> to sample a novel structure from the learned latent space.</p>
                   </div>
                 )}
               </div>
 
-              {/* Viewer panel */}
               <div className="cg-generate-right">
                 <div className="cg-viewer-card">
                   <div className="cg-viewer-label">Structure Visualisation</div>
-                  {smiles && !loading ? (
-                    <div className="cg-viewer-wrap">
-                      <MoleculeViewer smiles={smiles} />
-                    </div>
-                  ) : (
-                    <div className="cg-viewer-placeholder" aria-hidden="true">
-                      <div className="placeholder-ring" />
-                      <div className="placeholder-ring r2" />
-                      <div className="placeholder-dot" />
-                    </div>
-                  )}
+                  {smiles && !loading
+                    ? <div className="cg-viewer-wrap"><MoleculeViewer smiles={smiles} /></div>
+                    : (
+                      <div className="cg-viewer-placeholder" aria-hidden="true">
+                        <div className="placeholder-ring" />
+                        <div className="placeholder-ring r2" />
+                        <div className="placeholder-dot" />
+                      </div>
+                    )}
                 </div>
-
                 <div className="cg-info-strip">
-                  <div className="info-item">
-                    <span className="info-label">Architecture</span>
-                    <span className="info-val">VAE · LSTM</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Validation</span>
-                    <span className="info-val">RDKit</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Chemical Space</span>
-                    <span className="info-val">10<sup>60</sup>–10<sup>100</sup></span>
-                  </div>
+                  <div className="info-item"><span className="info-label">Architecture</span><span className="info-val">VAE · LSTM</span></div>
+                  <div className="info-item"><span className="info-label">Validation</span><span className="info-val">RDKit</span></div>
+                  <div className="info-item"><span className="info-label">Chem. Space</span><span className="info-val">10⁶⁰–10¹⁰⁰</span></div>
                 </div>
               </div>
+
             </div>
           </div>
         )}
@@ -316,11 +290,11 @@ export default function App() {
         {activeTab === "pipeline" && (
           <div className="cg-content">
             <div className="cg-pipeline-layout">
-              <div className="cg-pipeline-steps" role="list" aria-label="Pipeline steps">
+              <div className="cg-pipeline-steps" role="list">
                 {PIPELINE.map((item, i) => (
                   <div className={`cg-pipeline-row ${item.color}`} key={i} role="listitem">
                     <div className="pl-step-num">{item.step}</div>
-                    <div className="pl-connector" aria-hidden="true">
+                    <div className="pl-connector">
                       {i < PIPELINE.length - 1 && <div className="pl-line" />}
                     </div>
                     <div className="pl-body">
@@ -341,24 +315,22 @@ export default function App() {
                   <div className="api-body">
                     <div className="api-col">
                       <div className="api-col-label">Request</div>
-                      <pre className="api-code">{`{
-  "prompt":
-    "Generate a molecule"
-}`}</pre>
+                      <pre className="api-code">{`{\n  "prompt":\n  "Generate a molecule"\n}`}</pre>
                     </div>
-                    <div className="api-arrow" aria-hidden="true">→</div>
+                    <div className="api-arrow">→</div>
                     <div className="api-col">
                       <div className="api-col-label">Response</div>
-                      <pre className="api-code">{`{
-  "generated_smiles":
-    "CCOc1ccc...",
-  "valid": true
-}`}</pre>
+                      <pre className="api-code">{`{\n  "generated_smiles":\n  "CCOc1ccc...",\n  "valid": true\n}`}</pre>
                     </div>
+                  </div>
+                  <div className="api-endpoints-row">
+                    {["/generate · POST", "/history · GET", "/health · GET", "/ping · GET"].map(ep => (
+                      <span className="api-ep-chip" key={ep}>{ep}</span>
+                    ))}
                   </div>
                 </div>
 
-                <div className="cg-tech-grid" role="list" aria-label="Technology stack">
+                <div className="cg-tech-grid" role="list">
                   {TECH_STACK.map((t, i) => (
                     <div className="cg-tech-tile" key={i} role="listitem">
                       <span className="tech-icon" aria-hidden="true">{t.icon}</span>
@@ -372,11 +344,58 @@ export default function App() {
           </div>
         )}
 
+        {/* ══ HISTORY ══ */}
+        {activeTab === "history" && (
+          <div className="cg-content">
+            <div className="cg-history-header">
+              <p className="cg-history-sub">Last 50 molecules stored in the SQLite backend via SQLAlchemy.</p>
+              <button className="cg-refresh-btn" onClick={fetchHistory} disabled={histLoading}>
+                {histLoading ? <><span className="btn-spinner sm" />Refreshing…</> : <>↻ Refresh</>}
+              </button>
+            </div>
+
+            {histLoading && (
+              <div className="cg-hist-loading">
+                <div className="cg-spinner" />
+                <span>Fetching history…</span>
+              </div>
+            )}
+
+            {!histLoading && history.length === 0 && (
+              <div className="cg-empty-state">
+                <div className="empty-hex">◉</div>
+                <p>No history yet. Generate some molecules first.</p>
+              </div>
+            )}
+
+            {!histLoading && history.length > 0 && (
+              <div className="cg-history-grid">
+                {history.map((mol) => (
+                  <div className="cg-hist-card" key={mol.id}>
+                    <div className="hist-card-top">
+                      <span className="hist-id">#{mol.id}</span>
+                      <span className={`hist-pill ${mol.valid ? "hist-valid" : "hist-invalid"}`}>
+                        <span className="pill-dot" />
+                        {mol.valid ? "Valid" : "Invalid"}
+                      </span>
+                    </div>
+                    <code className="hist-smiles">{mol.smiles}</code>
+                    <div className="hist-meta">
+                      <span>{new Date(mol.created_at).toLocaleString()}</span>
+                      <span>{mol.smiles.length} chars</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ══ ABOUT ══ */}
         {activeTab === "about" && (
           <div className="cg-content">
             <div className="cg-about-layout">
-              <div className="cg-about-grid" role="list" aria-label="Platform overview">
+              <div className="cg-about-grid" role="list">
                 {ABOUT_CARDS.map((c, i) => (
                   <div className={`cg-about-card ${c.color}`} key={i} role="listitem">
                     <div className="about-card-icon" aria-hidden="true">{c.icon}</div>
@@ -385,7 +404,6 @@ export default function App() {
                   </div>
                 ))}
               </div>
-
               <div className="cg-academic-card">
                 <div className="academic-label">Academic Context</div>
                 <p className="academic-course">EC7203 — Advanced Artificial Intelligence</p>
@@ -395,16 +413,18 @@ export default function App() {
                   <span>Generative AI</span>
                   <span>Cheminformatics</span>
                   <span>VAE</span>
+                  <span>SMILES</span>
+                  <span>RDKit</span>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        <footer className="cg-footer" role="contentinfo">
+        <footer className="cg-footer">
           <span>ChemGenAI · University of Ruhuna · EC7203</span>
-          <span className="footer-dot" aria-hidden="true">·</span>
-          <span>HuggingFace · Docker · MLflow</span>
+          <span className="footer-dot">·</span>
+          <span>HuggingFace · Docker · MLflow · FastAPI</span>
         </footer>
       </main>
     </div>
