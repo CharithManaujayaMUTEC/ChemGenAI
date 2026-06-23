@@ -1,4 +1,4 @@
-# <p align="center">🧪 ChemGenAI</p>
+# <p align="center">ChemGenAI</p>
 
 <p align="center">
   <img src="docs/logo.png" alt="ChemGenAI Logo" width="220"/>
