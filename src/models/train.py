@@ -1,3 +1,11 @@
+"""
+Training script for an LSTM-based SMILES VAE.
+
+Loads a subset of the ZINC dataset, builds a character-level tokenizer,
+trains a variational autoencoder to reconstruct SMILES strings, and logs
+parameters/metrics/the trained model to MLflow for experiment tracking.
+"""
+
 import os
 import json
 import torch
@@ -24,6 +32,8 @@ from src.models.lstm_vae import LSTMVAE
 
 print("Loading dataset...")
 
+# Pulls a fixed-size subset rather than the full ZINC dataset, mainly to
+# keep iteration time and memory usage reasonable during development.
 smiles_list = load_zinc_subset(20000)
 
 print(f"Loaded {len(smiles_list)} molecules")
@@ -39,6 +49,8 @@ tokenizer.build_vocab(smiles_list)
 
 os.makedirs("models", exist_ok=True)
 
+# Persist the vocab alongside the model — needed at inference time to
+# decode generated token sequences back into SMILES strings.
 with open("models/vocab.json", "w") as f:
     json.dump(tokenizer.vocab, f)
 
@@ -51,6 +63,7 @@ print(f"Vocabulary Size: {len(tokenizer.vocab)}")
 # MAX SEQUENCE LENGTH
 # =========================
 
+# +2 accounts for the <start> and <end> tokens added during encoding.
 max_len = max(len(s) for s in smiles_list) + 2
 
 print(f"Max Sequence Length: {max_len}")
@@ -116,6 +129,8 @@ optimizer = torch.optim.Adam(
     lr=learning_rate
 )
 
+# ignore_index=0 skips <pad> tokens so padding doesn't contribute to the
+# reconstruction loss.
 criterion = nn.CrossEntropyLoss(
     ignore_index=0
 )
@@ -126,7 +141,14 @@ criterion = nn.CrossEntropyLoss(
 # =========================
 
 def vae_loss(logits, targets, mu, logvar):
+    """
+    Standard VAE loss: reconstruction (cross-entropy over predicted vs.
+    actual next tokens) plus the KL divergence between the learned latent
+    distribution N(mu, exp(logvar)) and a standard normal prior.
 
+    Note: the two terms are summed unweighted here (no beta-VAE style
+    scaling on the KL term).
+    """
     reconstruction_loss = criterion(
         logits.reshape(
             -1,
@@ -156,6 +178,8 @@ os.makedirs("models", exist_ok=True)
 # START MLFLOW
 # =========================
 
+# Defensive cleanup: avoids a "run already active" error if a previous
+# run wasn't closed cleanly (e.g. script was interrupted).
 if mlflow.active_run():
     mlflow.end_run()
 

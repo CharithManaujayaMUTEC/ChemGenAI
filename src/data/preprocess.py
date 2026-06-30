@@ -2,7 +2,14 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
+"""
+SMILES tokenization and PyTorch Dataset utilities.
 
+SmilesTokenizer builds a character-level vocabulary from a list of SMILES
+strings and converts between strings and fixed-length integer sequences
+(with <pad>, <start>, <end> special tokens). SmilesDataset wraps the
+encoded sequences for use with a DataLoader.
+"""
 class SmilesTokenizer:
     def __init__(self):
         self.char_to_idx = {}
@@ -10,6 +17,9 @@ class SmilesTokenizer:
         self.vocab = []
 
     def build_vocab(self, smiles_list):
+        """Build vocabulary from all unique characters across the dataset,
+        prepending the special tokens used for padding and sequence
+        boundaries."""
 
         chars = sorted(list(set("".join(smiles_list))))
 
@@ -24,6 +34,8 @@ class SmilesTokenizer:
         }
 
     def encode(self, smiles, max_len):
+        """Convert a SMILES string into a fixed-length list of token ids,
+        wrapped with <start>/<end> and right-padded with <pad>."""
 
         seq = [self.char_to_idx["<start>"]]
 
@@ -37,6 +49,8 @@ class SmilesTokenizer:
         return seq + padding
 
     def decode(self, tokens):
+        """Convert a sequence of token ids back into a SMILES string,
+        dropping special tokens."""
 
         chars = []
 
@@ -53,6 +67,8 @@ class SmilesTokenizer:
 
 
 class SmilesDataset(Dataset):
+    """Wraps a list of SMILES strings as a PyTorch Dataset of encoded,
+    padded integer sequences."""
 
     def __init__(self, smiles_list, tokenizer, max_len):
 
