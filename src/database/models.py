@@ -3,7 +3,8 @@ from sqlalchemy import (
     Integer,
     String,
     Boolean,
-    DateTime
+    DateTime,
+    Float
 )
 
 from sqlalchemy.orm import declarative_base
@@ -35,6 +36,11 @@ class Molecule(Base):
 
     prompt = Column(
         String
+    )
+
+    chemberta_score = Column(
+        Float,
+        nullable=True
     )
 
     created_at = Column(

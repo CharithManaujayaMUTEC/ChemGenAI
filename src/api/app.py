@@ -12,6 +12,8 @@ Base.metadata.create_all(bind=engine)
 from src.database.database import SessionLocal
 from src.database.models import Molecule
 
+from src.evaluation.chemberta import get_embedding_score
+
 app = FastAPI(
     title="ChemGenAI API",
     version="1.0.0"
@@ -31,6 +33,7 @@ class GenerateResponse(BaseModel):
     prompt: str
     generated_smiles: str
     valid: bool
+    chemberta_embedding_score: float
 
 
 @app.get("/")
@@ -47,19 +50,22 @@ def health():
     }
 
 
-@app.post("/generate")
+@app.post("/generate",response_model=GenerateResponse)
 def generate(request: GenerateRequest):
 
-    smiles = generate_smiles()
+    smiles = generate_smiles(request.prompt)
 
     valid = is_valid_smiles(smiles)
+
+    chemberta_embedding_score = get_embedding_score(smiles)
 
     db = SessionLocal()
 
     molecule = Molecule(
         smiles=smiles,
         valid=valid,
-        prompt=request.prompt
+        prompt=request.prompt,
+        chemberta_embedding_score=chemberta_embedding_score
     )
 
     db.add(molecule)
@@ -71,9 +77,9 @@ def generate(request: GenerateRequest):
     return {
         "prompt": request.prompt,
         "generated_smiles": smiles,
-        "valid": valid
+        "valid": valid,
+        "chemberta_embedding_score": chemberta_embedding_score
     }
-
 
 @app.get("/ping")
 def ping():
@@ -102,6 +108,7 @@ def history():
             "smiles": molecule.smiles,
             "valid": molecule.valid,
             "prompt": molecule.prompt,
+            "chemberta_embedding_score": molecule.chemberta_embedding_score,
             "created_at": molecule.created_at
         })
 

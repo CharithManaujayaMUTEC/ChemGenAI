@@ -10,7 +10,6 @@ uvicorn
 mlflow
 pyyaml
 tqdm
-fastapi
-uvicorn
 rdkit
 sqlalchemy
+sentencepiece
