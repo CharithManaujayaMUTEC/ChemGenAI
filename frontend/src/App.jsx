@@ -13,6 +13,16 @@ const PROMPTS = [
   "Generate a molecule",
 ];
 
+const KEYWORDS = [
+  "diverse", "novel", "creative", "random",
+  "stable", "simple",
+  "small", "medium", "large", "long",
+  "organic", "aromatic", "benzene", "ring",
+  "alcohol", "amine", "ketone", "ester", "amide", "ether", "acid",
+  "polar", "nonpolar", "hydrophobic", "hydrophilic",
+  "drug", "drug-like", "medicine", "lead", "candidate",
+];
+
 const TECH_STACK = [
   { label: "PyTorch",    sub: "VAE Model",   icon: "⬡" },
   { label: "ChemBERTa",  sub: "Transformer", icon: "✦" },
@@ -109,10 +119,13 @@ function fmt(n, d = 2) {
 }
 
 export default function App() {
-  const [prompt, setPrompt] = useState(PROMPTS[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [activeTab, setActiveTab] = useState("generate");
+  const [prompt, setPrompt] = useState("Generate a diverse aromatic drug candidate");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const promptInputRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Generation response state
@@ -127,6 +140,42 @@ export default function App() {
   const [history, setHistory] = useState([]);
   const [histLoading, setHistLoading] = useState(false);
   const [histFilter, setHistFilter] = useState("all"); // all | valid | drug_like
+
+  const updateSuggestions = (value, cursorPos) => {
+    const upToCursor = value.slice(0, cursorPos);
+    const match = upToCursor.match(/[A-Za-z-]+$/);
+    const currentWord = match ? match[0].toLowerCase() : "";
+  
+    if (currentWord.length === 0) {
+      setShowSuggestions(false);
+      setSuggestions([]);
+      return;
+    }
+  
+    const matches = KEYWORDS.filter(
+      (k) => k.startsWith(currentWord) && k !== currentWord
+    );
+    setSuggestions(matches.slice(0, 6));
+    setShowSuggestions(matches.length > 0);
+  };
+  
+  const handlePromptChange = (e) => {
+    setPrompt(e.target.value);
+    updateSuggestions(e.target.value, e.target.selectionStart);
+  };
+  
+  const applySuggestion = (word) => {
+    const input = promptInputRef.current;
+    const cursorPos = input ? input.selectionStart : prompt.length;
+    const before = prompt.slice(0, cursorPos);
+    const after = prompt.slice(cursorPos);
+    const replaced = before.replace(/[A-Za-z-]+$/, word);
+    const newValue = `${replaced} ${after}`.replace(/\s+/g, " ");
+    setPrompt(newValue);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    requestAnimationFrame(() => input && input.focus());
+  };
 
   const generateMolecule = async () => {
     try {
@@ -272,16 +321,37 @@ export default function App() {
               </div>
 
               <div className="cg-prompt-select">
-                <label className="cg-prompt-label" htmlFor="prompt-select">PROMPT</label>
-                <select
-                  id="prompt-select"
-                  className="cg-select"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  disabled={loading}
-                >
-                  {PROMPTS.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
+                <label className="cg-prompt-label" htmlFor="prompt-input">PROMPT</label>
+                <div className="cg-autocomplete-wrap">
+                  <input
+                    id="prompt-input"
+                    ref={promptInputRef}
+                    className="cg-text-input"
+                    type="text"
+                    value={prompt}
+                    onChange={handlePromptChange}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 120)}
+                    onFocus={(e) => updateSuggestions(e.target.value, e.target.selectionStart)}
+                    placeholder="e.g. Generate a diverse aromatic drug candidate"
+                    disabled={loading}
+                    autoComplete="off"
+                  />
+                  {showSuggestions && (
+                    <div className="cg-suggest-dropdown" role="listbox">
+                      {suggestions.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          className="cg-suggest-item"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => applySuggestion(s)}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <button className="cg-generate-btn" onClick={generateMolecule} disabled={loading} aria-busy={loading}>
