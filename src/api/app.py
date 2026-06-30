@@ -1,47 +1,54 @@
+from datetime import datetime
+
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-from src.evaluation.metrics import is_valid_smiles
 from src.api.model_service import generate_smiles
 
-from src.database.database import engine
-from src.database.models import Base
+from src.database.database import SessionLocal, engine
+from src.database.models import Base, Molecule
+
+# ==========================================
+# CREATE DATABASE TABLES
+# ==========================================
 
 Base.metadata.create_all(bind=engine)
 
-from src.database.database import SessionLocal
-from src.database.models import Molecule
-
-from src.evaluation.chemberta import get_embedding_score
+# ==========================================
+# FASTAPI APP
+# ==========================================
 
 app = FastAPI(
     title="ChemGenAI API",
-    version="1.0.0"
+    version="2.1.0"
 )
 
-print("ChemGenAI FastAPI started")
+print("ChemGenAI FastAPI Started")
 
+# ==========================================
+# REQUEST MODEL
+# ==========================================
 
 class GenerateRequest(BaseModel):
     prompt: str = Field(
         default="Generate a molecule",
-        description="User prompt for future conditional molecule generation"
+        description="Natural language prompt"
     )
 
-
-class GenerateResponse(BaseModel):
-    prompt: str
-    generated_smiles: str
-    valid: bool
-    chemberta_embedding_score: float
-
+# ==========================================
+# ROOT
+# ==========================================
 
 @app.get("/")
 def home():
     return {
-        "message": "ChemGenAI API Running"
+        "message": "ChemGenAI API Running",
+        "version": "2.1.0"
     }
 
+# ==========================================
+# HEALTH
+# ==========================================
 
 @app.get("/health")
 def health():
@@ -49,37 +56,9 @@ def health():
         "status": "healthy"
     }
 
-
-@app.post("/generate",response_model=GenerateResponse)
-def generate(request: GenerateRequest):
-
-    smiles = generate_smiles(request.prompt)
-
-    valid = is_valid_smiles(smiles)
-
-    chemberta_embedding_score = get_embedding_score(smiles)
-
-    db = SessionLocal()
-
-    molecule = Molecule(
-        smiles=smiles,
-        valid=valid,
-        prompt=request.prompt,
-        chemberta_embedding_score=chemberta_embedding_score
-    )
-
-    db.add(molecule)
-
-    db.commit()
-
-    db.close()
-
-    return {
-        "prompt": request.prompt,
-        "generated_smiles": smiles,
-        "valid": valid,
-        "chemberta_embedding_score": chemberta_embedding_score
-    }
+# ==========================================
+# PING
+# ==========================================
 
 @app.get("/ping")
 def ping():
@@ -87,31 +66,158 @@ def ping():
         "message": "pong"
     }
 
+# ==========================================
+# GENERATE MOLECULES
+# ==========================================
+
+@app.post("/generate")
+def generate(request: GenerateRequest):
+
+    result = generate_smiles(request.prompt)
+
+    db = SessionLocal()
+
+    try:
+
+        for molecule in result["results"]:
+
+            properties = molecule["properties"]
+
+            db.add(
+
+                Molecule(
+
+                    smiles=molecule["smiles"],
+
+                    valid=molecule["valid"],
+
+                    prompt=request.prompt,
+
+                    chemberta_score=molecule["chemberta_score"],
+
+                    score=molecule["score"],
+
+                    drug_like=molecule["lipinski"]["drug_like"],
+
+                    molecular_weight=(
+                        properties["molecular_weight"]
+                        if properties else None
+                    ),
+
+                    logp=(
+                        properties["logP"]
+                        if properties else None
+                    ),
+
+                    tpsa=(
+                        properties["tpsa"]
+                        if properties else None
+                    ),
+
+                    h_bond_donors=(
+                        properties["h_bond_donors"]
+                        if properties else None
+                    ),
+
+                    h_bond_acceptors=(
+                        properties["h_bond_acceptors"]
+                        if properties else None
+                    ),
+
+                    rotatable_bonds=(
+                        properties["rotatable_bonds"]
+                        if properties else None
+                    ),
+
+                    ring_count=(
+                        properties["ring_count"]
+                        if properties else None
+                    ),
+
+                    heavy_atoms=(
+                        properties["heavy_atoms"]
+                        if properties else None
+                    )
+
+                )
+
+            )
+
+        db.commit()
+
+    finally:
+
+        db.close()
+
+    result["generated_at"] = datetime.utcnow().isoformat()
+
+    return result
+
+# ==========================================
+# GENERATION HISTORY
+# ==========================================
+
 @app.get("/history")
 def history():
 
     db = SessionLocal()
 
-    molecules = (
-        db.query(Molecule)
-        .order_by(Molecule.id.desc())
-        .limit(50)
-        .all()
-    )
+    try:
 
-    result = []
+        molecules = (
 
-    for molecule in molecules:
+            db.query(Molecule)
 
-        result.append({
-            "id": molecule.id,
-            "smiles": molecule.smiles,
-            "valid": molecule.valid,
-            "prompt": molecule.prompt,
-            "chemberta_embedding_score": molecule.chemberta_embedding_score,
-            "created_at": molecule.created_at
-        })
+            .order_by(Molecule.id.desc())
 
-    db.close()
+            .limit(100)
 
-    return result
+            .all()
+
+        )
+
+        result = []
+
+        for molecule in molecules:
+
+            result.append({
+
+                "id": molecule.id,
+
+                "smiles": molecule.smiles,
+
+                "valid": molecule.valid,
+
+                "prompt": molecule.prompt,
+
+                "chemberta_score": molecule.chemberta_score,
+
+                "score": molecule.score,
+
+                "drug_like": molecule.drug_like,
+
+                "molecular_weight": molecule.molecular_weight,
+
+                "logp": molecule.logp,
+
+                "tpsa": molecule.tpsa,
+
+                "h_bond_donors": molecule.h_bond_donors,
+
+                "h_bond_acceptors": molecule.h_bond_acceptors,
+
+                "rotatable_bonds": molecule.rotatable_bonds,
+
+                "ring_count": molecule.ring_count,
+
+                "heavy_atoms": molecule.heavy_atoms,
+
+                "created_at": molecule.created_at
+
+            })
+
+        return result
+
+    finally:
+
+        db.close()
